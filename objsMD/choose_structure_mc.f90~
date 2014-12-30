@@ -1,0 +1,15 @@
+PROGRAM choose
+ implicit none
+ real              :: beta = 0.0
+ real, allocatable :: w(:),ener(:)
+ integer           :: k
+ 
+ contains
+ subroutine select_config(w,sumw,n)
+  call get_seed(seed)
+  
+  ws = 
+ end subroutine select_config
+ subroutine get_seed(seed)
+ 
+END PROGRAM choose

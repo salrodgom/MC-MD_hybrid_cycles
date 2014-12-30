@@ -1,0 +1,48 @@
+# rules to overwrite
+0
+# number of defined interactions
+41
+# type      type2       interaction
+UNIT        UNIT        lennard-jones      1.0           1.0
+Si              Si      none
+Si              Al      none
+Si              O       none
+Si              Na      none
+Si              Ca      none
+Si              Sr      none
+Si              Cs      none
+Al              Al      none
+Al              O       none
+Al              Na      none
+Al              Ca      none
+Al              Sr      none
+Al              Cs      none
+O               O       none
+O               Na      buckingham2      17174688.5381838        3.55492356914326        469983.03094354   2.1
+O               Ca      buckingham2      23359985.1461594        3.48492768775047        271894.90907825   2.0
+O               Sr      buckingham2      21874601.0931498        3.28515111695137        346976.43113272   2.0
+O               Cs      buckingham2     109561301.4371420        3.44234079173838       2266785.54697535   2.0
+Na              Na      none
+Na              Ca      none
+Na              Sr      none
+Ca              Ca      none
+Ca              Sr      none
+Ca              Cs      none
+Sr              Sr      none
+Sr              Cs      none
+Cs              Cs      none
+C_co2	        O       lennard-jones     42.125         3.900
+O_co2           O       lennard-jones     69.743         3.480
+C_co2           Na      lennard-jones     66.780        2.827
+O_co2           Na      lennard-jones     54.760        2.707
+CH3_sp3     O           lennard-jones     93.00         3.48
+CH2_sp3     O           lennard-jones     60.50         3.58
+CH_sp3      O           lennard-jones     40.0          3.92
+C_sp3       O           lennard-jones     10.0          4.56
+CH_sp2      O           lennard-jones     55.215        3.502
+CH2_sp2     O           lennard-jones     82.05         3.53
+CH_sp2q     O           lennard-jones     55.215        3.502
+CH2_sp2q    O           lennard-jones     82.05         3.53
+CH4_sp3     O           lennard-jones     91.65424      3.51000
+# mixing rules to overwrite
+0

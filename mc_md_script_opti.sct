@@ -1,0 +1,432 @@
+#! /bin/bash
+# dependencias:
+# RASPA, DL_POLY, gulp
+# optional: ifort
+optimisate=yes     # default: yes
+freeze=yes         # yes
+n_mc=10            # 5
+n_md=10            # 10
+mc_cycles=500    # 10000
+md_cycles=500    # 2500
+md_cycles_ini=100 # 1000
+CPUs=2
+n_max_proc=4
+FOR_COMPILER=ifort
+#
+loc=`pwd`
+objsMD=$loc/objsMD
+objsMC=$loc/objsMC
+RandomSeed=1111111111
+cation=$1
+ncation=$2
+temperature=$4
+framework=$3
+pressure=0.0
+function dlpoly_x {
+  n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
+  n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
+  n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
+  n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
+  while [ $(echo "$n_proc >= $n_max_proc" | bc -l) == 1 ] ; do
+        sleep 60
+        n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
+        n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
+        n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
+        n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
+  done
+  mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X 
+}
+function print_input_RASPA {
+let "movies_cycles = ncycles - 1"
+echo "SimulationType             $SimulationType
+NumberOfCycles                   $ncycles
+NumberOfInitializationCycles     $inicialization
+NumberOfEquilibrationCycles      $equilibration
+RestartFile                      $RestartFile
+PrintEvery                       100
+Movies                           yes
+WriteMoviesEvery                 $movies_cycles
+RemoveAtomNumberCodeFromLabel    yes
+UseChargesFromCIFFile            no
+RemoveBondNeighboursFromLongRangeInteraction    yes
+RemoveBendNeighboursFromLongRangeInteraction    yes
+RemoveTorsionNeighboursFromLongRangeInteraction yes
+InternalFrameworkLennardJonesInteractions       no
+Ensemble                         ${ensemble}
+Forcefield                                      local
+CutOff                                          12.0
+ChargeMethod                                    Ewald
+EwaldPrecision                                  1e-10
+Framework  0
+FrameworkName                                   RHO_${framework}_C1
+UnitCells                                       1 1 1
+ReplicaUnitCells                                1 1 1
+InputFileType                                   cif
+ExternalTemperature                             $temp
+FlexibleFramework                               $FlexibleFramework
+FrameworkDefinitions                            local
+component 0  MoleculeName                     $cation
+             MoleculeDefinition               TraPPE
+             ExtraFrameworkMolecule           yes
+             TranslationProbability           1.0
+             RandomTranslationProbability     1.0
+             CreateNumberOfMolecules          $ncations
+" > simulation.input
+}
+function print_input_DLPOLY_CONTROL {
+# CONTROL
+echo "name mc_md_${framework}_${cation}_${ncations}
+temperature               $temp
+pressure                  $pressure
+steps                     $ncycles
+equilibration steps       $ncycles
+timestep                  $timestep ps
+delr                      0.5
+rlxtol                    20.0 force
+scale                     5
+print every               100
+stats every               100
+cutoff                    12.00
+rvdw                      12.00
+ewald precision           1.e-8
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+trajectory 0 100 2
+job time                  80000
+close time                20
+finish" > CONTROL
+}
+function print_input_DLPOLY_FIELD {
+    # CONFIG y FIELD.middle
+    ./gin2dlpoly < gin
+    # FIELD
+    nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
+    n_atoms=`grep 'ATOM' input.pdb | wc -l`; n_atoms=`echo "$n_atoms / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+    echo "name mc_md_${framework}_${cation}_${ncations}
+units       eV
+MOLECULES 1
+RHO_${framework}
+nummols 1
+atoms   $n_atoms" > FIELD.top
+    n_Si=`grep 'ATOM' input.pdb |grep "Si " | wc -l`; n_Si=`echo "$n_Si / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Si -gt 0 ] ; then
+   echo "Si           28.0855        4.00       $n_Si  0" >> FIELD.top
+   echo "Si  Si  buck       0.00    1.0000     0.0" >> FIELD.bottom
+   echo "Si  Osh buck    1283.907   0.32052   10.66158" >> FIELD.bottom
+   echo "Si  O   buck       0.00    1.0000     0.0" >> FIELD.bottom
+fi
+n_Al=`grep 'ATOM' input.pdb |grep "Al " | wc -l`; n_Al=`echo "$n_Al / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Al -gt 0 ] ; then
+   echo "Al           26.9815        3.00      $n_Al  0" >> FIELD.top
+   echo "Al  Al  buck       0.00    1.0000     0.0" >> FIELD.bottom
+   echo "Si  Al  buck       0.00    1.0000     0.0" >> FIELD.bottom
+   echo "Al  Osh buck    1460.300   0.29912    0.0" >> FIELD.bottom
+   echo "Al  O   buck       0.00    1.0000     0.0" >> FIELD.bottom
+fi
+n_Li=`grep 'ATOM' input.pdb |grep "Li " | wc -l`; n_Li=`echo "$n_Li / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Li -gt 0 ] ; then
+   echo "Li            6.941        1.00      $n_Li  FREEZE" >> FIELD.top
+   echo "Li Osh buck   3359.9360    0.222794    0.0" >> FIELD.bottom
+fi
+n_Na=`grep 'ATOM' input.pdb |grep "Na " | wc -l`; n_Na=`echo "$n_Na / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Na -gt 0 ] ; then
+   echo "Na           22.9897        1.00      $n_Na  FREEZE" >> FIELD.top
+   echo "Na Osh buck    1226.840   0.30650    0.0" >> FIELD.bottom
+fi
+n_K=`grep 'ATOM' input.pdb |grep "K " | wc -l`; n_K=`echo "$n_K / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_K -gt 0 ] ; then
+   echo "K            39.0983        1.00      $n_K  FREEZE" >> FIELD.top
+   echo "K  Osh buck   7175.0518    0.262865    0.0" >> FIELD.bottom
+fi
+n_Cs=`grep 'ATOM' input.pdb |grep "Cs " | wc -l`; n_Cs=`echo "$n_Cs / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Cs -gt 0 ] ; then
+   echo "Cs          132.9054        1.00      $n_Cs  FREEZE" >> FIELD.top
+   echo "Cs Osh buck    3591.00000     0.301000  35.00000" >> FIELD.bottom
+#   echo "Cs Cs  buck    41700.0000     0.299000  36.00000" >> FIELD.bottom
+fi
+n_Ca=`grep 'ATOM' input.pdb |grep "Ca " | wc -l`; n_Ca=`echo "$n_Ca / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Ca -gt 0 ] ; then
+   echo "Ca           40.0780        2.00      $n_Ca  FREEZE" >> FIELD.top
+   echo "Ca Osh buck    1228.900   0.33722    0.0" >> FIELD.bottom
+fi
+n_Sr=`grep 'ATOM' input.pdb |grep "Sr " | wc -l`; n_Sr=`echo "$n_Sr / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Sr -gt 0 ] ; then
+   echo "Sr           87.6200        2.0       $n_Sr  FREEZE" >> FIELD.top
+   echo "Sr Osh buck    1952.39000     0.336850  19.22000" >> FIELD.bottom
+fi
+n_Fe=`grep 'ATOM' input.pdb |grep "Fe " | wc -l`; n_Fe=`echo "$n_Fe / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_Fe -gt 0 ] ; then echo "Fe           55.8450        3.0       $n_Fe  FREEZE" >> FIELD.top ; fi
+n_O=`grep 'ATOM' input.pdb |grep "O " | wc -l`; n_O=`echo "$n_O / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_O -gt 0 ] ; then echo "O            15.7994        0.86902   $n_O  0" >> FIELD.top ; fi
+n_sh=`grep 'ATOM' input.pdb |grep "sh" | wc -l`; n_sh=`echo "$n_sh / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+if [ $n_sh -gt 0 ] ; then
+   echo "Osh           0.0000       -2.86902   $n_sh  0" >> FIELD.top
+   echo "Osh Osh buck   22764.40    0.14900   27.88000" >> FIELD.bottom
+   echo "shell $n_sh 2" >> FIELD.top
+fi
+n_lines=`wc -l FIELD.bottom | awk '{print $1}'`
+echo "finish
+vdw $n_lines" > FIELD.superbottom
+#n_bends=`wc -l FIELD.bends | awk '{print $1}'`
+#echo "angles $n_bends" >> FIELD.shell
+echo "tbp 2
+Osh    Si      Osh     harm   2.0972    109.47000  2.0 2.0 3.0
+Osh    Al      Osh     harm   2.0972    109.47000  2.0 2.0 3.0" > FIELD.infrabottom
+echo "close" >> FIELD.infrabottom
+cat FIELD.top > FIELD
+cat FIELD.shell >> FIELD
+#cat FIELD.bends >> FIELD
+cat FIELD.superbottom >> FIELD
+cat FIELD.bottom >> FIELD
+cat FIELD.infrabottom >> FIELD
+rm FIELD.*
+}
+function inicialization_sim {
+  folder=ini
+  mkdir $folder
+  cd $folder
+   FrameworkName=RHO_${framework}_C1
+   cp $objsMC/*.def .
+   cp $objsMC/$FrameworkName.cif .
+   SimulationType=MC
+   RestartFile=no
+   ncations=$ncation
+   ncycles=0
+   inicialization=1
+   equilibration=1
+   FlexibleFramework=no 
+   ensemble=NVT
+   temp=$temperature
+   print_input_RASPA
+   echo "inicialisation [RASPA]"
+   simulate > /dev/null
+   update
+  cd ..
+}
+function MC_move {
+  folder=MC_${i}_${j}
+  mkdir $folder
+  cd $folder
+   cp $objsMC/*.def .
+   cp ../RHO_${framework}_C1.cif .
+   SimulationType=MC
+   RestartFile=no
+   FrameworkName=RHO_${framework}_C1
+   ncations=$ncation
+   ncycles=$mc_cycles
+   inicialization=10
+   equilibration=10
+   FlexibleFramework=yes
+   temp=$temperature
+   print_input_RASPA
+   echo "MC Cycle $i$j [RASPA]"
+   simulate > /dev/null
+   sed '/MODEL    2/,$!d' Movies/System_0/Movie_*_allcomponents.pdb > c
+   sed 's/MODEL    2/MODEL    1/g' c > input.pdb
+   cp input.pdb ../input_${i}${j}.pdb
+   rm c
+    cp $objsMD/pdb2gin.f90 .
+    cp $objsMD/gin.bottom .
+    gfortran -O2 -march=native pdb2gin.f90 -o pdb2gin
+    echo "Sorting PDB"
+    head -n2 input.pdb > pdb.top
+    tail -n1 input.pdb > pdb.bottom
+    touch pdb.middle
+    for k in 'Si' 'Al' 'Li' 'Na' 'K' 'Cs' 'Ca' 'Sr' 'Fe' 'O ' 'sh' ; do
+       grep "$k " input.pdb | grep 'ATOM' >> pdb.middle
+       sed -i "/$k /d" input.pdb
+    done
+    cat pdb.top    >  input.pdb
+    cat pdb.middle >> input.pdb
+    cat pdb.bottom >> input.pdb
+    echo "PDB 2 gin"
+    ./pdb2gin > /dev/null
+    sed -i 's/sh    core/ O    shel/g' gin
+    sed -i 's/sh   core/ O  shel/g' gin
+    cat gin.bottom >> gin
+    echo "optimise shell [ GULP ]"
+    if [ $optimisate == "yes" ] ; then
+     mpirun --np ${CPUs} gulp < gin > gout
+    fi
+    sleep 1
+    cp gin.res ../gin.res.$i.$j
+#
+  cd ..
+#  update
+}
+#
+function choose_boltz_gulp {
+  gfortran -O2 -march=native gin2dlpoly.f90 -o gin2dlpoly
+  gfortran -O2 -march=native arc2cif.f90 -o arc2cif
+  gfortran -O2 -march=native choose_structure_mc.f90 -o choose_structure_mc
+  config=0
+  rm choose_structure_mc.input toto
+  echo $n_mc > choose_structure_mc.input
+  echo $temp >> choose_structure_mc.input
+  for j in `seq 1 $n_mc` ; do
+      ener=`grep 'totalenergy' ../gin.res.$i.$j | awk '{print $2}'`
+      ener=`echo "$ener * 100000.0 / 8.6173324" | bc -l`
+      echo "$j $ener" >> toto
+  done
+  sort -nk2 toto >> choose_structure_mc.input
+  ./choose_structure_mc < choose_structure_mc.input > choose_structure_mc.output
+  cat choose_structure_mc.output
+  confi=`tail -n1 choose_structure_mc.output | awk '{print $1}'`
+  energia=`tail -n1 choose_structure_mc.output | awk '{print $2}'`
+  echo "Select: MC [ $confi ], [ $energia ]"
+}
+#
+function MD_move {
+  folder=MD_$i
+  mkdir $folder
+  cd $folder
+  cp $objsMD/* .
+  timestep=0.00025
+  temp=$temperature
+  choose_boltz_gulp
+  cp ../gin.res.$i.$confi gin
+  cp ../input_${i}${confi}.pdb input.pdb
+  finalizado=0
+  while [ `echo "$finalizado == 0" | bc -l` == 1 ] ; do
+# --------------------
+    # nvt
+    ncycles=$md_cycles_ini
+    print_input_DLPOLY_CONTROL
+    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nvt hoover 0.05/g" CONTROL
+    print_input_DLPOLY_FIELD
+    cp FIELD FIELD.bak
+    rm gin2dlpoly
+    if [ $freeze == 'yes' ] ; then
+       sed -i 's/FREEZE/1/g' FIELD
+    else
+       sed -i 's/FREEZE/0/g' FIELD
+    fi
+    echo "MD Cycle $i ( Relaxation ) ( Freeze = $freeze )"
+    mpirun --np ${CPUs} ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
+    sleep 1
+    cp OUTPUT OUTPUT.freeze
+    echo "MD Cycle $i ( Equilibration )"
+    sed 's/FREEZE/0/g' FIELD.bak > FIELD
+    mpirun --np ${CPUs} ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
+    sleep 1
+    # npt
+    ncycles=$md_cycles
+    print_input_DLPOLY_CONTROL
+    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nst hoover 0.05 0.05/g" CONTROL
+    cp REVCON CONFIG
+    cp OUTPUT OUTPUT.nvt
+    rm REVIVE OUTPUT REVCON STATIS HISTORY
+    echo "MD Cycle $i ( Production )"
+    mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
+    sleep 1
+# {{  control de salida de DL_POLY
+    finalizado=`grep 'sample of final configuration' OUTPUT | wc -l`
+    if [ `echo "$finalizado == 1" | bc -l` == 1 ] ; then
+      echo "Simulation finish"
+      touch GREAT
+      cp OUTPUT OUTPUT.npt
+    else
+      echo "Simulation wrong"
+      touch ERROR
+      cp OUTPUT OUTPUT.wrong
+      confi=`echo $RANDOM % $n_mc + 1 | bc`
+      cp ../input_${i}${confi}.pdb input.pdb
+    fi
+   done
+# }}
+# {{ extraer volume-time
+   gfortran volume.f90 -o volume
+   cp HISTORY pbc.hist
+   ./hist2arc.sct pbc
+   grep 'PBC' pbc.arc | sed '/^$/d' | sed '/./!d' | awk '{print $2,$3,$4,$5,$6,$7}' > pbc
+   ./volume < pbc > vol
+   rm pbc.hist pbc.arc pbc
+# }}
+# {{ extraigo la configuracion mas estable de la mitad para adelante del
+# intervalo temporal
+   measure
+   hist2arc
+   arc2cif
+   cp out.cif out.cif.$i
+   for cati in 'Li' 'Na' 'K' 'Cs' 'Ca' 'Sr' 'Fe' ; do
+       sed -i "/$cati /d" out.cif
+   done
+   cp out.cif ../RHO_${framework}_C1_$i.cif
+   cp out.cif ../RHO_${framework}_C1.cif
+  cd ..
+}
+function measure {
+     # elijo la estructura menos energética
+     echo " chose structure "
+     awk '{print $1}' STATIS | head -2 > toto
+     tail -1 toto > tutu
+     pala=`cat tutu`
+     if [ "$pala" = "ENERGY" ] ; then add=2 ; fi
+     if [ "$pala" != "ENERGY" ] ; then add=0 ; fi
+     tmp2=`awk '{if (NF==3) print $1,$2,$3,NR}' STATIS | sed '/ENERGY/d' | awk '{print $4}' | head -n1`
+     tmp1=`awk '{if (NF==3) print $1,$2,$3,NR}' STATIS | sed '/ENERGY/d' | awk '{print $4}' | head -n2 | tail -n1`
+#     tmp2=`awk '{if (NF==3) print NR}' STATIS |head -1`
+#     tmp1=`awk '{if (NF==3) print NR}' STATIS |head -2|tail -1`
+     jump=`echo "$tmp1 - $tmp2" | bc -l`
+     awk -v add=$add '{ for (i=1+add; i<16000;i+='$jump') if (NR==i) { print $2} }' STATIS >  STATIS.time
+     # energia configuracional !!
+     awk -v add=$add ' { for (i=2+add;i<16000;i+='$jump') if (NR==i) { print $3} }' STATIS  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > STATIS.tot
+     # elijo de entre solo los ultimos n / 2 pasos
+     lineas=`wc -l STATIS.tot | awk '{print $1}'`
+     lineas=`echo "$lineas / 4.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+     tail -n${lineas} STATIS.tot > STATIS.2
+     mv STATIS.2 STATIS.tot
+     #
+     tiempo=`sort -nk2 STATIS.tot | head -n1 | awk '{print $1}'`
+     paso=`grep "$tiempo " STATIS | awk '{print $1}'`
+     line=`grep " $paso " HISTORY | grep 'timestep'`
+     nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
+     n_atoms=`grep 'ATOM' input.pdb | wc -l`; n_atoms=`echo "$n_atoms / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+     m=`echo "( $n_atoms * 4.0 ) + 4.0 - 1.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+     head -n1 HISTORY > HISTORY.hist
+     cp HISTORY HISTORY.$i
+     cp STATIS  STATIS.$i
+     grep -A$m "$line" HISTORY >> HISTORY.hist
+     m=`wc -l HISTORY.hist | awk '{print $1}'`
+     echo "HISTORY.hist done ( $m lines )"
+}
+#
+function update {
+  if [ -d RestartInitial ] ; then rm -R RestartInitial ; fi
+  cp -R Restart RestartInitial
+  cp Movies/System_0/Framework_0_final_1_1_1_P1.cif ../RHO_${framework}_C1.cif
+}
+#
+function arc2cif {
+  echo "ARC 2 CIF"
+  ./arc2cif
+}
+#
+function hist2arc {
+  echo "hist2ARC [ hist2arc.sct ]"
+  ./hist2arc.sct HISTORY
+  cp HISTORY.arc input.arc
+  cp HISTORY.arc HISTORY.arc.$i
+}
+#
+# MAIN
+# 
+folder=${cation}_${temperature}_${RandomSeed}_$framework
+if [ ! -d $folder ] ; then
+   mkdir $folder
+   cd $folder
+   touch output.data
+   touch movie.pdb
+   inicialization_sim
+   for i in `seq 1 $n_md` ; do
+       # montecarlo
+       for j in `seq 1 $n_mc` ; do
+         MC_move
+       done
+       # molecular dynamics NPT
+       temp=$temperature
+       MD_move
+   done
+   cd ..
+fi
+exit 0

@@ -1,0 +1,30 @@
+species   11
+Al     core    3.000000
+Si     core    4.000000
+O      core    0.869020
+O      shel   -2.869020
+Li     core    1.0
+Na     core    1.0
+K      core    1.0
+Cs     core    1.0
+Ca     core    2.000000
+Sr     core    2.0
+Fe     core    3.0
+buck
+Si    core O     shel  1283.90700     0.320520  10.66158      0.00 12.00
+Al    core O     shel  1460.30000     0.299120  0.000000      0.00 12.00
+O     shel O     shel  22764.0000     0.149000  27.88000      0.00 12.00
+Ca    core O     shel  1228.90000     0.337220  0.000000      0.00 12.00
+Na    core O     shel  1226.84000     0.306500  0.000000      0.00 12.00
+Li    core O     shel  3359.93600     0.222794  0.0           0.0  12.0
+K     core O     shel  7175.05180     0.262865  0.0           0.00 12.00
+Cs    core O     shel  3591.00000     0.301000  35.00000      0.00 12.00
+Sr    core O     shel  1952.39000     0.336850  19.22000      0.00 12.00
+spring
+O     74.920000
+three       regular
+Si    core O     shel O     shel 2.0972      109.47000 0.000  2.000  0.000  2.000  0.000  4.000
+Al    core O     shel O     shel 2.0972      109.47000 0.000  2.000  0.000  2.000  0.000  4.000
+shellmass
+O 0.1
+dump every 1 gin.res

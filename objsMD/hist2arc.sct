@@ -1,0 +1,95 @@
+#!/bin/bash
+
+###########################################################
+# This part is to get nhm, which is 2 if the history file 
+# comes from a restart file and 4 if not
+
+head -1 $1.hist | awk '{print $1}' > test
+test=`cat test`
+
+nhm=6
+if [ "$test" = "timestep" ] ; then
+nhm=2
+fi
+echo $nhm
+###########################################################
+#
+# Get nn, the number of ZnS units in the file
+grep -n tim $1.hist | head -2 | tail -1 | sed 's/\:/ /'|awk '{print $1}' > nn
+
+nn=`cat nn`
+echo $nn > numberm
+###########################################################
+
+head -$nhm $1.hist> tmp1
+tail -1 tmp1 > tmp2
+
+echo  
+echo  
+echo "removing water molecules in the history file number $1"
+echo  ...
+
+
+echo "!BIOSYM archive 2" > head
+echo "PBC=ON" >> head
+echo "Frame 1" >> head
+
+###########################################################
+#
+# Remove the water molecules, and write the coordinates in arc format
+
+awk -v nn=$nn  '{
+        if ($1 == "Si") {getline;print "Si",$0}
+        else if ($1 == "O") {getline;print "O",$0}
+        else if ($1 == "Al") {getline;print "Al",$0}
+        else if ($1 == "Na") {getline;print "Na",$0}
+        else if ($1 == "Ca") {getline;print "Ca",$0}
+        else if ($1 == "Cs") {getline;print "Cs",$0}
+        else if ($1 == "Sr") {getline;print "Sr",$0}
+        else if ($1 == "K") {getline;print "K",$0}
+        else if ($1 == "timestep") {print "end";print "end";
+	printf ("%-5s%+11s\n","Frame",$2);
+	getline;ax=$1;ay=$2;az=$3;
+	getline;bx=$1;by=$2;bz=$3;
+	getline;cx=$1;cy=$2;cz=$3;
+	A=sqrt(ax*ax+ay*ay+az*az)
+	B=sqrt(bx*bx+by*by+bz*bz)
+	C=sqrt(cx*cx+cy*cy+cz*cz)
+	ax=ax/A;ay=ay/A;az=az/A;
+	bx=bx/B;by=by/B;bz=bz/B;
+	cx=cx/C;cy=cy/C;cz=cz/C;
+
+	alpho=(bx*cx+by*cy+bz*cz)
+	alpha=atan2((1.-alpho^2)^0.5,alpho)*180/3.141592
+
+	beto=(ax*cx+ay*cy+az*cz)
+	beta=atan2((1.-beto^2)^0.5,beto)*180/3.141592
+
+	gammo=(ax*bx+ay*by+az*bz)
+	gamma=atan2((1.-gammo^2)^0.5,gammo)*180/3.141592
+
+        print "!DATE";
+        printf ("%-3s%10.4f%10.4f%10.4f%10.4f%10.4f%10.4f%-6s\n","PBC",A,B,C,alpha,beta,gamma," (P1)")};
+        }' $1.hist > $1.tmp1
+
+
+awk '{
+	if ($1 == "Si")      {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Si ",$2,$3,$4,"P1","1010","Si Si ","",0.0)}}
+	else if ($1 == "O") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","O ",$2,$3,$4,"P1","1010","O O","",0.0)}}
+	else if ($1 == "Al") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Al ",$2,$3,$4,"P1","1010","Al Al","",0.0)}}
+        else if ($1 == "Na") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Na ",$2,$3,$4,"P1","1010","Na Na ","",0.0)}}
+	else if ($1 == "Ca") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Ca ",$2,$3,$4,"P1","1010","Ca Ca ","",0.0)}}
+        else if ($1 == "Cs") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Cs ",$2,$3,$4,"P1","1010","Cs Cs ","",0.0)}}
+        else if ($1 == "Sr") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","Sr ",$2,$3,$4,"P1","1010","Sr Sr ","",0.0)}}
+        else if ($1 == "K") {{printf ("%-5s%15.9f%15.9f%15.9f%+3s%+6s%+7s%+2s%6.5f\n","K ",$2,$3,$4,"P1","1010","K K ","",0.0)}}
+	else  {print $0}
+	}' $1.tmp1 > $1.tmp2
+
+a=`grep -c "" $1.tmp2`
+b=`expr $a - 3`
+tail -$b $1.tmp2 > $1.tmp3
+echo end >> $1.tmp3
+echo end >> $1.tmp3
+
+cat head $1.tmp3 > $1.arc
+rm -f head  nn linenum test tmp1 tmp2 FILE TOP $1.tmp*

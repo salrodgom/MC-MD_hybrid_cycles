@@ -7,7 +7,7 @@ freeze=yes         # yes
 n_mc=10            # 5
 n_md=10            # 10
 mc_cycles=10000    # 10000
-md_cycles=2500     # 2500
+md_cycles=25000    # 2500
 md_cycles_ini=1000 # 1000
 CPUs=4
 n_max_proc=24
@@ -60,7 +60,6 @@ EwaldPrecision                                  1e-10
 Framework  0
 FrameworkName                                   RHO_${framework}_C1
 UnitCells                                       1 1 1
-ReplicaUnitCells                                1 1 1
 InputFileType                                   cif
 ExternalTemperature                             $temp
 FlexibleFramework                               $FlexibleFramework
@@ -96,18 +95,18 @@ close time                20
 finish" > CONTROL
 }
 function print_input_DLPOLY_FIELD {
-    # CONFIG y FIELD.middle
-    ./gin2dlpoly < gin
-    # FIELD
-    nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
-    n_atoms=`grep 'ATOM' input.pdb | wc -l`; n_atoms=`echo "$n_atoms / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
-    echo "name mc_md_${framework}_${cation}_${ncations}
+# CONFIG y FIELD.middle
+./gin2dlpoly < gin
+# FIELD
+nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
+n_atoms=`grep 'ATOM' input.pdb | wc -l`; n_atoms=`echo "$n_atoms / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+echo "name mc_md_${framework}_${cation}_${ncations}
 units       eV
 MOLECULES 1
 RHO_${framework}
 nummols 1
 atoms   $n_atoms" > FIELD.top
-    n_Si=`grep 'ATOM' input.pdb |grep "Si " | wc -l`; n_Si=`echo "$n_Si / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+n_Si=`grep 'ATOM' input.pdb |grep "Si " | wc -l`; n_Si=`echo "$n_Si / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_Si -gt 0 ] ; then
    echo "Si           28.0855        4.00       $n_Si  0" >> FIELD.top
    echo "Si  Si  buck       0.00    1.0000     0.0" >> FIELD.bottom
@@ -198,7 +197,7 @@ function inicialization_sim {
    temp=$temperature
    print_input_RASPA
    echo "inicialisation [RASPA]"
-   simulate > /dev/null
+   simulate
    update
   cd ..
 }
@@ -218,8 +217,9 @@ function MC_move {
    FlexibleFramework=yes
    temp=$temperature
    print_input_RASPA
-   echo "MC Cycle $i$j [RASPA]"
-   simulate > /dev/null
+   echo "MC Cycle ($i:$j) [RASPA]"
+   sed -i '/shO /d' *.cif
+   simulate
    sed '/MODEL    2/,$!d' Movies/System_0/Movie_*_allcomponents.pdb > c
    sed 's/MODEL    2/MODEL    1/g' c > input.pdb
    cp input.pdb ../input_${i}${j}.pdb
@@ -403,10 +403,10 @@ function arc2cif {
 }
 #
 function hist2arc {
-  echo "hist2ARC [ hist2arc.sct ]"
-  ./hist2arc.sct HISTORY
-  cp HISTORY.arc input.arc
-  cp HISTORY.arc HISTORY.arc.$i
+echo "hist2ARC [ hist2arc.sct ]"
+./hist2arc.sct HISTORY
+cp HISTORY.arc input.arc
+cp HISTORY.arc HISTORY.arc.$i
 }
 #
 # MAIN

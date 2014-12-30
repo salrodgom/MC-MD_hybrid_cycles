@@ -78,7 +78,7 @@ subroutine GULP(u,xfrac,n,label,cell_0)
  CHARACTER (LEN=80)               :: line
  integer :: k,i
  WRITE(u,'(A)')'opti'
- WRITE(u,'(A)')'maxcyc 1'
+ WRITE(u,'(A)')'maxcyc 10'
  WRITE(u,'(A4,1x,a8,1x,i10)')'name','PDB 2 GIN:',n
  WRITE(u,'(A)')'cell'
  WRITE(u,'(6f11.6,1x,11a)')(cell_0(k), k=1,6 ),'0 0 0 0 0 0'

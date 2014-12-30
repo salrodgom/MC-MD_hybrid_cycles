@@ -1,0 +1,22 @@
+#! /bin/bash
+rm vol econf
+for i in `seq 1 $1` ; do
+    cd MD_$i
+       cp STATIS pp.stat
+       xtractnew_12 pp
+    cd ..
+    cat MD_$i/pp.vol   >> vol
+    cat MD_$i/pp.econf >> econf
+done
+i=0
+while read line ; do
+  let i++
+  echo "$i $line" >> vol2
+done < vol
+i=0
+while read line ; do
+  let i++
+  echo "$i $line" >> econf2
+done < econf
+mv vol2 vol
+mv econf2 econf

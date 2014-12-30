@@ -6,11 +6,11 @@ optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=10            # 5
 n_md=10            # 10
-mc_cycles=500    # 10000
-md_cycles=500    # 2500
-md_cycles_ini=100 # 1000
-CPUs=2
-n_max_proc=4
+mc_cycles=10000    # 10000
+md_cycles=2500     # 2500
+md_cycles_ini=1000 # 1000
+CPUs=4
+n_max_proc=24
 FOR_COMPILER=ifort
 #
 loc=`pwd`
@@ -22,20 +22,20 @@ ncation=$2
 temperature=$4
 framework=$3
 pressure=0.0
-function dlpoly_x {
-  n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
-  n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
-  n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
-  n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
-  while [ $(echo "$n_proc >= $n_max_proc" | bc -l) == 1 ] ; do
-        sleep 60
-        n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
-        n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
-        n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
-        n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
-  done
-  mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X 
-}
+#function dlpoly_x {
+#  n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#  n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#  n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#  n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
+#  while [ $(echo "$n_proc >= $n_max_proc" | bc -l) == 1 ] ; do
+#        sleep 60
+#        n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#        n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#        n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
+#        n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
+#  done
+#  mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X 
+#}
 function print_input_RASPA {
 let "movies_cycles = ncycles - 1"
 echo "SimulationType             $SimulationType
@@ -415,8 +415,8 @@ folder=${cation}_${temperature}_${RandomSeed}_$framework
 if [ ! -d $folder ] ; then
    mkdir $folder
    cd $folder
-   touch output.data
-   touch movie.pdb
+   #touch output.data
+   #touch movie.pdb
    inicialization_sim
    for i in `seq 1 $n_md` ; do
        # montecarlo

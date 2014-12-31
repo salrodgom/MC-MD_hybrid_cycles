@@ -273,6 +273,7 @@ function choose_boltz_gulp {
   confi=`tail -n1 choose_structure_mc.output | awk '{print $1}'`
   energia=`tail -n1 choose_structure_mc.output | awk '{print $2}'`
   echo "Select: MC [ $confi ], [ $energia ]"
+  rm choose_structure_mc 
 }
 #
 function MD_move {

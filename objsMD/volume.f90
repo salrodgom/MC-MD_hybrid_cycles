@@ -15,9 +15,6 @@ PROGRAM cell_volume
  !
  CONTAINS
  SUBROUTINE cell(rv,vr,cell_0)
-! ======================
-! GULP
-! ======================
  implicit none
  integer :: i,j
  real, intent(in)  :: cell_0(6)
@@ -62,9 +59,6 @@ PROGRAM cell_volume
  END SUBROUTINE cell
 !
  SUBROUTINE uncell(rv,cell_0)
-! ======================
-! GULP
-! ======================
   implicit none
   real,intent(out)   :: cell_0(6)
   real,intent(in)    :: rv(3,3)
@@ -171,25 +165,6 @@ PROGRAM cell_volume
  END SUBROUTINE inverse
 !
 real function volume(rv)
-!
-!  Conditions of use:
-!
-!  GULP is available free of charge to academic institutions
-!  and non-commerical establishments only. Copies should be
-!  obtained from the author only and should not be distributed
-!  in any form by the user to a third party without the express
-!  permission of the author. This notice applies to all parts
-!  of the program, except any library routines which are
-!  distributed with the code for completeness. All rights for
-!  such routines remain with the original distributor.
-!
-!  No claim is made that this program is free from errors and
-!  no liability will be accepted for any loss or damage that
-!  may result. The user is responsible for checking the validity
-!  of their results.
-!
-!  Copyright Curtin University 2004
-!
   implicit none
   real, intent(in)  :: rv(3,3)
   real       :: r1x

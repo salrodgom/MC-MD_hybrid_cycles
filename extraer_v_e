@@ -1,12 +1,34 @@
 #! /bin/bash
+function extraer {
+     pala=`awk '{print $1}' stat | head -n2 | tail -n1`
+     if [ "$pala" = "ENERGY" ] ; then add=2 ; fi
+     if [ "$pala" != "ENERGY" ] ; then add=0 ; fi
+     tmp2=`awk '{if (NF==3) print $1,$2,$3,NR}' stat | sed '/ENERGY/d' | awk '{print $4}' | head -n1`
+     tmp1=`awk '{if (NF==3) print $1,$2,$3,NR}' stat | sed '/ENERGY/d' | awk '{print $4}' | head -n2 | tail -n1`
+     jump=`echo "$tmp1 - $tmp2" | bc -l`
+     awk -v add=$add '{ for (i=1+add; i<16000;i+='$jump') if (NR==i) { print $2} }' stat >  STATIS.time
+     awk -v add=$add ' { for (i=2+add;i<16000;i+='$jump') if (NR==i) { print $3} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > econf
+     awk -v add=$add ' { for (i=3+add;i<16000;i+='$jump') if (NR==i) { print $5} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > enth
+     awk -v add=$add ' { for (i=2+add;i<16000;i+='$jump') if (NR==i) { print $3} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > econf
+     awk -v add=$add ' { for (i=2+add;i<16000;i+='$jump') if (NR==i) { print $2} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > temp
+     awk -v add=$add ' { for (i=5+add;i<16000;i+='$jump') if (NR==i) { print $5} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > tempcs
+     awk -v add=$add ' { for (i=5+add;i<16000;i+='$jump') if (NR==i) { print $4} }' stat  | awk '{ s += $1 } {print $1,s/NR}'  > STATIS.tmp1
+     paste  STATIS.time STATIS.tmp1 > vol
+
+}
 rm vol econf
 for i in `seq 1 $1` ; do
     cd MD_$i
-       cp STATIS pp.stat
-       xtractnew_12 pp
+       cp STATIS stat
+       extraer
     cd ..
-    cat MD_$i/pp.vol   >> vol
-    cat MD_$i/pp.econf >> econf
+    cat MD_$i/vol   >> vol
+    cat MD_$i/econf >> econf
 done
 i=0
 while read line ; do

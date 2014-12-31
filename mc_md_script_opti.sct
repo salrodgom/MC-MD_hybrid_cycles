@@ -172,11 +172,16 @@ Osh    Si      Osh     harm   2.0972    109.47000  2.0 2.0 3.0
 Osh    Al      Osh     harm   2.0972    109.47000  2.0 2.0 3.0" > FIELD.infrabottom
 echo "close" >> FIELD.infrabottom
 cat FIELD.top > FIELD
+sleep 0.1
 cat FIELD.shell >> FIELD
+sleep 0.1
 #cat FIELD.bends >> FIELD
 cat FIELD.superbottom >> FIELD
+sleep 0.1
 cat FIELD.bottom >> FIELD
+sleep 0.1
 cat FIELD.infrabottom >> FIELD
+sleep 0.1
 rm FIELD.*
 }
 function inicialization_sim {
@@ -222,7 +227,7 @@ function MC_move {
    simulate
    sed '/MODEL    2/,$!d' Movies/System_0/Movie_*_allcomponents.pdb > c
    sed 's/MODEL    2/MODEL    1/g' c > input.pdb
-   cp input.pdb ../input_${i}${j}.pdb
+   cp input.pdb ../input_${i}_${j}.pdb
    rm c
     cp $objsMD/pdb2gin.f90 .
     cp $objsMD/gin.bottom .
@@ -285,7 +290,7 @@ function MD_move {
   temp=$temperature
   choose_boltz_gulp
   cp ../gin.res.$i.$confi gin
-  cp ../input_${i}${confi}.pdb input.pdb
+  cp ../input_${i}_${confi}.pdb input.pdb
   finalizado=0
   while [ `echo "$finalizado == 0" | bc -l` == 1 ] ; do
 # --------------------
@@ -312,7 +317,7 @@ function MD_move {
     # npt
     ncycles=$md_cycles
     print_input_DLPOLY_CONTROL
-    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nst hoover 0.05 0.05/g" CONTROL
+    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nst mtk 0.05 0.05/g" CONTROL
     cp REVCON CONFIG
     cp OUTPUT OUTPUT.nvt
     rm REVIVE OUTPUT REVCON STATIS HISTORY
@@ -321,6 +326,7 @@ function MD_move {
     sleep 1
 # {{  control de salida de DL_POLY
     finalizado=`grep 'sample of final configuration' OUTPUT | wc -l`
+    # finalizado=`grep 'Thank you for using the DL_POLY_4 package in your work' OUTPUT | wc -l`
     if [ `echo "$finalizado == 1" | bc -l` == 1 ] ; then
       echo "Simulation finish"
       touch GREAT
@@ -330,17 +336,17 @@ function MD_move {
       touch ERROR
       cp OUTPUT OUTPUT.wrong
       confi=`echo $RANDOM % $n_mc + 1 | bc`
-      cp ../input_${i}${confi}.pdb input.pdb
+      cp ../input_${i}_${confi}.pdb input.pdb
     fi
    done
 # }}
 # {{ extraer volume-time
-   gfortran volume.f90 -o volume
-   cp HISTORY pbc.hist
-   ./hist2arc.sct pbc
-   grep 'PBC' pbc.arc | sed '/^$/d' | sed '/./!d' | awk '{print $2,$3,$4,$5,$6,$7}' > pbc
-   ./volume < pbc > vol
-   rm pbc.hist pbc.arc pbc
+   #gfortran volume.f90 -o volume
+   #cp HISTORY pbc.hist
+   #./hist2arc.sct pbc
+   #grep 'PBC' pbc.arc | sed '/^$/d' | sed '/./!d' | awk '{print $2,$3,$4,$5,$6,$7}' > pbc
+   #./volume < pbc > vol
+   #rm pbc.hist pbc.arc pbc
 # }}
 # {{ extraigo la configuracion mas estable de la mitad para adelante del
 # intervalo temporal

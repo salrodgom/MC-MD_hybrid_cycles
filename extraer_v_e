@@ -21,7 +21,7 @@ function extraer {
      paste  STATIS.time STATIS.tmp1 > vol
 
 }
-rm vol econf
+rm vol econf temp enth
 for i in `seq 1 $1` ; do
     cd MD_$i
        cp STATIS stat
@@ -29,6 +29,9 @@ for i in `seq 1 $1` ; do
     cd ..
     cat MD_$i/vol   >> vol
     cat MD_$i/econf >> econf
+    cat MD_$i/temp  >> temp
+    cat MD_$i/enth  >> enth
+    rm MD_$i/vol MD_$i/econf MD_$i/temp MD_$i/enth
 done
 i=0
 while read line ; do
@@ -40,5 +43,23 @@ while read line ; do
   let i++
   echo "$i $line" >> econf2
 done < econf
+i=0
+while read line ; do
+  let i++
+  echo "$i $line" >> temp2
+done < temp
+i=0
+while read line ; do
+  let i++
+  echo "$i $line" >> enth2
+done < enth
 mv vol2 vol
 mv econf2 econf
+mv temp2 temp
+mv enth2 enth
+echo "set size 1,0.5 ; set multiplot ; set size 0.5,0.5 ; set origin 0.0,0.0 " > gp
+echo "set xlabel 'steps' ; set ylabel 'cell size / \AA' ; set y2label 'econf / eV'"  >> gp
+echo "plot 'vol' u 1:((\$3/8.0)**(1/3.0)) w l t 'vol','./econf' u 1:4 axes x1y2 w l t 'econf'" >> gp
+echo "set origin 0.5,0.0 ; plot 'temp' u 1:4 w l t 'temp','enth' u 1:4 axes x1y2 w l t 'enth'" >> gp
+echo "unset multiplot ; pause mouse" >> gp
+gnuplot < gp

@@ -57,9 +57,10 @@ mv vol2 vol
 mv econf2 econf
 mv temp2 temp
 mv enth2 enth
-echo "set size 1,0.5 ; set multiplot ; set size 0.5,0.5 ; set origin 0.0,0.0 " > gp
+echo "set t postscript eps color enhanced blacktext 'Helvetica,14' ; set o 'v_e.eps'" > gp
+echo "set size 1,0.5 ; set multiplot ; set size 0.5,0.5 ; set origin 0.0,0.0 " >> gp
 echo "set xlabel 'steps' ; set ylabel 'cell size / \AA' ; set y2label 'econf / eV'"  >> gp
-echo "plot 'vol' u 1:((\$3/8.0)**(1/3.0)) w l t 'vol','./econf' u 1:4 axes x1y2 w l t 'econf'" >> gp
-echo "set origin 0.5,0.0 ; plot 'temp' u 1:4 w l t 'temp','enth' u 1:4 axes x1y2 w l t 'enth'" >> gp
+echo "plot 'vol' u 1:((\$3/8.0)**(1/3.0)) w l t 'vol','./econf' u 1:3 axes x1y2 w l t 'econf'" >> gp
+echo "set origin 0.5,0.0 ; plot 'temp' u 1:3 w l t 'temp','enth' u 1:3 axes x1y2 w l t 'enth'" >> gp
 echo "unset multiplot ; pause mouse" >> gp
-gnuplot < gp
+#gnuplot < gp

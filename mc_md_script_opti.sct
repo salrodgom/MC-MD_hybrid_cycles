@@ -6,8 +6,8 @@ optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=10            # 5
 n_md=10            # 10
-mc_cycles=10000    # 10000
-md_cycles=25000    # 2500
+mc_cycles=1000     # 10000
+md_cycles=25000    # 25000
 md_cycles_ini=1000 # 1000
 CPUs=4
 n_max_proc=24
@@ -74,24 +74,31 @@ component 0  MoleculeName                     $cation
 }
 function print_input_DLPOLY_CONTROL {
 # CONTROL
+let "movies_cycles = ncycles - 100"
 echo "name mc_md_${framework}_${cation}_${ncations}
-temperature               $temp
-pressure                  $pressure
-steps                     $ncycles
-equilibration steps       $ncycles
-timestep                  $timestep ps
-delr                      0.5
-rlxtol                    20.0 force
-scale                     5
-print every               100
-stats every               100
-cutoff                    12.00
-rvdw                      12.00
-ewald precision           1.e-8
+temperature   $temp
+pressure      $pressure
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+integration leapfrog verlet
+steps         $ncycles
+equilibration $movies_cycles
+scale every 5
+print every              100
+stack every              100
+stats every               10
+rdf                       10
+timestep                $timestep ps
+delr width              0.5000
+rlxtol                  20.0 force
+cutoff                  12.00
+rvdw                    12.00
+ewald precision         1.0E-6
+shake tolerance         1.0E-6
+quaternion tolerance    1.0E-6
 trajectory 0 100 2
-job time                  80000
-close time                20
+print rdf
+job time                80000
+close time              20
 finish" > CONTROL
 }
 function print_input_DLPOLY_FIELD {
@@ -182,7 +189,7 @@ cat FIELD.bottom >> FIELD
 sleep 0.1
 cat FIELD.infrabottom >> FIELD
 sleep 0.1
-rm FIELD.*
+#rm FIELD.*
 }
 function inicialization_sim {
   folder=ini
@@ -300,7 +307,6 @@ function MD_move {
     sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nvt hoover 0.05/g" CONTROL
     print_input_DLPOLY_FIELD
     cp FIELD FIELD.bak
-    rm gin2dlpoly
     if [ $freeze == 'yes' ] ; then
        sed -i 's/FREEZE/1/g' FIELD
     else
@@ -317,7 +323,7 @@ function MD_move {
     # npt
     ncycles=$md_cycles
     print_input_DLPOLY_CONTROL
-    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nst mtk 0.05 0.05/g" CONTROL
+    sed -i "s/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/ensemble nst hoover 0.05 0.005/g" CONTROL
     cp REVCON CONFIG
     cp OUTPUT OUTPUT.nvt
     rm REVIVE OUTPUT REVCON STATIS HISTORY
@@ -337,6 +343,8 @@ function MD_move {
       cp OUTPUT OUTPUT.wrong
       confi=`echo $RANDOM % $n_mc + 1 | bc`
       cp ../input_${i}_${confi}.pdb input.pdb
+# 
+      finalizado=1
     fi
    done
 # }}

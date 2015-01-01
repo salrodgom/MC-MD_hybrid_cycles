@@ -19,6 +19,13 @@ objsMC=$loc/objsMC
 RandomSeed=1111111111
 cation=$1
 ncation=$2
+if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] ; then
+   nAl=$ncation
+elif [[ $cation = *calcium* ]] || [[ $cation = *strontium* ]] || [[ $cation == *magnesium* ]] ; then
+   nAl=`echo "$ncation / 2.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+else
+   nAl=$ncation
+fi
 temperature=$4
 framework=$3
 pressure=0.0
@@ -58,7 +65,7 @@ CutOff                                          12.0
 ChargeMethod                                    Ewald
 EwaldPrecision                                  1e-10
 Framework  0
-FrameworkName                                   RHO_${framework}_C1
+FrameworkName                                   RHO_${framework}_$nAl
 UnitCells                                       1 1 1
 InputFileType                                   cif
 ExternalTemperature                             $temp
@@ -75,7 +82,7 @@ component 0  MoleculeName                     $cation
 function print_input_DLPOLY_CONTROL {
 # CONTROL
 let "movies_cycles = ncycles - 100"
-echo "name mc_md_${framework}_${cation}_${ncations}
+echo "name mc_md_${framework}_${cation}_${nAl}
 temperature   $temp
 pressure      $pressure
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -107,7 +114,7 @@ function print_input_DLPOLY_FIELD {
 # FIELD
 nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
 n_atoms=`grep 'ATOM' input.pdb | wc -l`; n_atoms=`echo "$n_atoms / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
-echo "name mc_md_${framework}_${cation}_${ncations}
+echo "name mc_md_${framework}_${cation}_${nAl}
 units       eV
 MOLECULES 1
 RHO_${framework}
@@ -195,7 +202,7 @@ function inicialization_sim {
   folder=ini
   mkdir $folder
   cd $folder
-   FrameworkName=RHO_${framework}_C1
+   FrameworkName=RHO_${framework}_$nAl
    cp $objsMC/*.def .
    cp $objsMC/$FrameworkName.cif .
    SimulationType=MC
@@ -215,13 +222,13 @@ function inicialization_sim {
 }
 function MC_move {
   folder=MC_${i}_${j}
+  FrameworkName=RHO_${framework}_$nAl 
   mkdir $folder
   cd $folder
    cp $objsMC/*.def .
-   cp ../RHO_${framework}_C1.cif .
+   cp ../$FrameworkName.cif .
    SimulationType=MC
    RestartFile=no
-   FrameworkName=RHO_${framework}_C1
    ncations=$ncation
    ncycles=$mc_cycles
    inicialization=10

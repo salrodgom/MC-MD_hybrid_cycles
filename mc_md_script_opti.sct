@@ -19,7 +19,7 @@ objsMC=$loc/objsMC
 RandomSeed=1111111111
 cation=$1
 ncation=$2
-if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] ; then
+if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] || [[ $cation == *caesium* ]] ; then
    nAl=$ncation
 elif [[ $cation = *calcium* ]] || [[ $cation = *strontium* ]] || [[ $cation == *magnesium* ]] ; then
    nAl=`echo "$ncation / 2.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`

@@ -423,7 +423,10 @@ function update {
 #
 function arc2cif {
   echo "ARC 2 CIF"
-  ./arc2cif
+  natoms=`grep ATOM input.pdb | sed '/sh /d' | wc -l | awk '{print $1}'`
+  let "n = natoms + 5"
+  tail -n$n HISTORY.arc > input.arc 
+  ./arc2cif 
 }
 #
 function hist2arc {

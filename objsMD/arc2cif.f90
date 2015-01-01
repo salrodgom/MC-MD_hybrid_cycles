@@ -32,6 +32,7 @@ PROGRAM pdb2gin
       n_atoms = 0
     ENDIF
     IF (line(1:2)=='Ge'.OR.line(1:2)=='Si'.or.&
+        line(1:2)=='Li'.or.line(1:2)=='Mg'.or.&
         line(1:2)=='O '.or.line(1:2)=='Al'.or.&
         line(1:2)=='Ca'.or.line(1:2)=='Na'.or.&
         line(1:2)=='Cs'.or.line(1:2)=='Sr'.or.&

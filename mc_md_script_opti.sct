@@ -6,7 +6,7 @@ optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=10            # 5
 n_md=10            # 10
-mc_cycles=1000     # 10000
+mc_cycles=10000    # 10000
 md_cycles=25000    # 25000
 md_cycles_ini=1000 # 1000
 CPUs=4
@@ -81,7 +81,7 @@ component 0  MoleculeName                     $cation
 }
 function print_input_DLPOLY_CONTROL {
 # CONTROL
-let "movies_cycles = ncycles - 100"
+let "movies_cycles = ncycles - 1"
 echo "name mc_md_${framework}_${cation}_${nAl}
 temperature   $temp
 pressure      $pressure
@@ -376,7 +376,7 @@ function MD_move {
    cp out.cif ../RHO_${framework}_C1.cif
   cd ..
 }
-function measure {
+function measure2 {
      # elijo la estructura menos energética
      echo " chose structure "
      awk '{print $1}' STATIS | head -2 > toto
@@ -386,8 +386,6 @@ function measure {
      if [ "$pala" != "ENERGY" ] ; then add=0 ; fi
      tmp2=`awk '{if (NF==3) print $1,$2,$3,NR}' STATIS | sed '/ENERGY/d' | awk '{print $4}' | head -n1`
      tmp1=`awk '{if (NF==3) print $1,$2,$3,NR}' STATIS | sed '/ENERGY/d' | awk '{print $4}' | head -n2 | tail -n1`
-#     tmp2=`awk '{if (NF==3) print NR}' STATIS |head -1`
-#     tmp1=`awk '{if (NF==3) print NR}' STATIS |head -2|tail -1`
      jump=`echo "$tmp1 - $tmp2" | bc -l`
      awk -v add=$add '{ for (i=1+add; i<16000;i+='$jump') if (NR==i) { print $2} }' STATIS >  STATIS.time
      # energia configuracional !!
@@ -395,11 +393,12 @@ function measure {
      paste  STATIS.time STATIS.tmp1 > STATIS.tot
      # elijo de entre solo los ultimos n / 2 pasos
      lineas=`wc -l STATIS.tot | awk '{print $1}'`
-     lineas=`echo "$lineas / 4.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+     lineas=`echo "$lineas / 2.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
      tail -n${lineas} STATIS.tot > STATIS.2
      mv STATIS.2 STATIS.tot
-     #
-     tiempo=`sort -nk2 STATIS.tot | head -n1 | awk '{print $1}'`
+     # ordeno por eenergias (2 columna)
+     #tiempo=`sort -nk2 STATIS.tot | head -n1 | awk '{print $1}'`
+     tiempo=`tail -n5 STATIS.tot | head -n1 | awk '{print $1}'`
      paso=`grep "$tiempo " STATIS | awk '{print $1}'`
      line=`grep " $paso " HISTORY | grep 'timestep'`
      nt=`grep 'MODEL' input.pdb | tail -n1 | awk '{print $2}'`
@@ -411,6 +410,9 @@ function measure {
      grep -A$m "$line" HISTORY >> HISTORY.hist
      m=`wc -l HISTORY.hist | awk '{print $1}'`
      echo "HISTORY.hist done ( $m lines )"
+}
+function measure {
+ cp HISTORY HISTORY.hist
 }
 #
 function update {

@@ -9,7 +9,7 @@ n_md=10            # 10
 mc_cycles=10000    # 10000
 md_cycles=25000    # 25000
 md_cycles_ini=1000 # 1000
-CPUs=4
+CPUs=1
 n_max_proc=24
 FOR_COMPILER=ifort
 #
@@ -22,7 +22,7 @@ ncation=$2
 if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] || [[ $cation == *caesium* ]] ; then
    nAl=$ncation
 elif [[ $cation = *calcium* ]] || [[ $cation = *strontium* ]] || [[ $cation == *magnesium* ]] ; then
-   nAl=`echo "$ncation / 2.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
+   nAl=`echo "$ncation * 2.0" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 else
    nAl=$ncation
 fi
@@ -418,7 +418,7 @@ function measure {
 function update {
   if [ -d RestartInitial ] ; then rm -R RestartInitial ; fi
   cp -R Restart RestartInitial
-  cp Movies/System_0/Framework_0_final_1_1_1_P1.cif ../RHO_${framework}_C1.cif
+  cp Movies/System_0/Framework_0_final_1_1_1_P1.cif ../RHO_${framework}_$nAl.cif
 }
 #
 function arc2cif {
@@ -435,7 +435,7 @@ cp HISTORY.arc HISTORY.arc.$i
 #
 # MAIN
 # 
-folder=${cation}_${temperature}_${RandomSeed}_$framework
+folder=${cation}_${temperature}_${RandomSeed}_${framework}_$nAl
 if [ ! -d $folder ] ; then
    mkdir $folder
    cd $folder

@@ -7,16 +7,16 @@ freeze=yes         # yes
 n_mc=10            # 5
 n_md=10            # 10
 mc_cycles=10000    # 10000
-md_cycles=25000    # 25000
+md_cycles=50000    # 25000
 md_cycles_ini=1000 # 1000
-CPUs=1
+CPUs=12
 n_max_proc=24
 FOR_COMPILER=ifort
 #
 loc=`pwd`
 objsMD=$loc/objsMD
 objsMC=$loc/objsMC
-RandomSeed=1111111111
+RandomSeed=2111111111
 cation=$1
 ncation=$2
 if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] || [[ $cation == *caesium* ]] ; then
@@ -75,7 +75,7 @@ component 0  MoleculeName                     $cation
              MoleculeDefinition               TraPPE
              ExtraFrameworkMolecule           yes
              TranslationProbability           1.0
-             RandomTranslationProbability     1.0
+             RandomTranslationProbability     2.0
              CreateNumberOfMolecules          $ncations
 " > simulation.input
 }
@@ -91,19 +91,19 @@ steps         $ncycles
 equilibration $movies_cycles
 scale every 5
 print every              100
-stack every              100
+#stack every              100
 stats every               10
-rdf                       10
+#rdf                       10
 timestep                $timestep ps
 delr width              0.5000
 rlxtol                  20.0 force
 cutoff                  12.00
 rvdw                    12.00
 ewald precision         1.0E-6
-shake tolerance         1.0E-6
-quaternion tolerance    1.0E-6
+#shake tolerance         1.0E-6
+#quaternion tolerance    1.0E-6
 trajectory 0 100 2
-print rdf
+#print rdf
 job time                80000
 close time              20
 finish" > CONTROL
@@ -372,8 +372,8 @@ function MD_move {
    for cati in 'Li' 'Na' 'K' 'Cs' 'Ca' 'Sr' 'Fe' ; do
        sed -i "/$cati /d" out.cif
    done
-   cp out.cif ../RHO_${framework}_C1_$i.cif
-   cp out.cif ../RHO_${framework}_C1.cif
+   cp out.cif ../RHO_${framework}_${nAl}_$i.cif
+   cp out.cif ../RHO_${framework}_${nAl}.cif
   cd ..
 }
 function measure2 {

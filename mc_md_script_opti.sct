@@ -4,12 +4,12 @@
 # optional: ifort
 optimisate=yes     # default: yes
 freeze=yes         # yes
-n_mc=10            # 5
+n_mc=5             # 5
 n_md=10            # 10
 mc_cycles=10000    # 10000
 md_cycles=50000    # 25000
 md_cycles_ini=1000 # 1000
-CPUs=12
+CPUs=8
 n_max_proc=24
 FOR_COMPILER=ifort
 #

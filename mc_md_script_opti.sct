@@ -5,7 +5,7 @@
 optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=5             # 5
-n_md=4             # 10
+n_md=2             # 10
 mc_cycles=1000     # 10000
 md_cycles=1000     # 25000
 md_cycles_ini=1000 # 1000
@@ -82,7 +82,7 @@ rdf                       10
 timestep                $timestep ps
 delr width              0.5000
 rlxtol                  20.0 force
-minim   position   20 0.0075
+minim   position   30 0.0075
 cutoff                  12.00
 rvdw                    12.00
 ewald precision         1.0E-6

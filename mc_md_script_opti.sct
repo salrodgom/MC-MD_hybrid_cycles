@@ -5,13 +5,12 @@
 optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=5             # 5
-n_md=10            # 10
-mc_cycles=10000    # 10000
-md_cycles=50000    # 25000
+n_md=2             # 10
+mc_cycles=1000     # 10000
+md_cycles=1000     # 25000
 md_cycles_ini=1000 # 1000
-CPUs=8
-n_max_proc=24
-FOR_COMPILER=ifort
+CPUs=4
+n_max_proc=4
 #
 loc=`pwd`
 objsMD=$loc/objsMD
@@ -91,19 +90,20 @@ steps         $ncycles
 equilibration $movies_cycles
 scale every 5
 print every              100
-#stack every              100
+stack every              100
 stats every               10
-#rdf                       10
+rdf                       10
 timestep                $timestep ps
 delr width              0.5000
-rlxtol                  20.0 force
+#rlxtol                  20.0 force
+minim position 10 0.0075
 cutoff                  12.00
 rvdw                    12.00
 ewald precision         1.0E-6
-#shake tolerance         1.0E-6
-#quaternion tolerance    1.0E-6
+shake tolerance         1.0E-6
+quaternion tolerance    1.0E-6
 trajectory 0 100 2
-#print rdf
+print rdf
 job time                80000
 close time              20
 finish" > CONTROL

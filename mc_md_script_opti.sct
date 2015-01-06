@@ -5,7 +5,7 @@
 optimisate=yes     # default: yes
 freeze=yes         # yes
 n_mc=5             # 5
-n_md=2             # 10
+n_md=4             # 10
 mc_cycles=1000     # 10000
 md_cycles=1000     # 25000
 md_cycles_ini=1000 # 1000
@@ -15,7 +15,7 @@ n_max_proc=4
 loc=`pwd`
 objsMD=$loc/objsMD
 objsMC=$loc/objsMC
-RandomSeed=2111111111
+RandomSeed=111111111
 cation=$1
 ncation=$2
 if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] || [[ $cation == *caesium* ]] ; then
@@ -28,20 +28,6 @@ fi
 temperature=$4
 framework=$3
 pressure=0.0
-#function dlpoly_x {
-#  n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#  n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#  n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#  n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
-#  while [ $(echo "$n_proc >= $n_max_proc" | bc -l) == 1 ] ; do
-#        sleep 60
-#        n_proc_RASPA=`ps aux | grep 'simulate' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#        n_proc_GULP=`ps aux | grep 'gulp' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#        n_proc_DLPOLY=`ps aux | grep 'DLPOLY.X' | sed '/grep/d' | wc -l | awk '{print $1}'`
-#        n_proc=`echo "$n_proc_RASPA + $n_proc_GULP + $n_proc_DLPOLY" | bc  -l`
-#  done
-#  mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X 
-#}
 function print_input_RASPA {
 let "movies_cycles = ncycles - 1"
 echo "SimulationType             $SimulationType
@@ -95,8 +81,8 @@ stats every               10
 rdf                       10
 timestep                $timestep ps
 delr width              0.5000
-#rlxtol                  20.0 force
-minim position 10 0.0075
+rlxtol                  20.0 force
+minim   position   20 0.0075
 cutoff                  12.00
 rvdw                    12.00
 ewald precision         1.0E-6
@@ -138,17 +124,22 @@ fi
 n_Li=`grep 'ATOM' input.pdb |grep "Li " | wc -l`; n_Li=`echo "$n_Li / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_Li -gt 0 ] ; then
    echo "Li            6.941        1.00      $n_Li  FREEZE" >> FIELD.top
+   #echo "#Jan Kucera and Petr Nachtigall, Phys. Chem. Chem. Phys., 2003, 5, 3311-3317" >> FIELD.bottom
    echo "Li Osh buck   3359.9360    0.222794    0.0" >> FIELD.bottom
 fi
 n_Na=`grep 'ATOM' input.pdb |grep "Na " | wc -l`; n_Na=`echo "$n_Na / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_Na -gt 0 ] ; then
    echo "Na           22.9897        1.00      $n_Na  FREEZE" >> FIELD.top
-   echo "Na Osh buck    1226.840   0.30650    0.0" >> FIELD.bottom
+   #echo "# ..." >> FIELD.bottom
+   #echo "#Na Osh buck    1226.840   0.30650    0.0" >> FIELD.bottom
+   #echo "#R. A. Jackson and C. R. A. Catlow, Mol. Simul., 1988, 1, 207" >> FIELD.bottom
+   echo "Na Osh buck    5836.8400  0.238700   0.0" >> FIELD.bottom
 fi
 n_K=`grep 'ATOM' input.pdb |grep "K " | wc -l`; n_K=`echo "$n_K / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_K -gt 0 ] ; then
    echo "K            39.0983        1.00      $n_K  FREEZE" >> FIELD.top
    echo "K  Osh buck   7175.0518    0.262865    0.0" >> FIELD.bottom
+   #echo "#Jan Kucera and Petr Nachtigall, Phys. Chem. Chem. Phys., 2003, 5, 3311-3317" >> FIELD.bottom
 fi
 n_Cs=`grep 'ATOM' input.pdb |grep "Cs " | wc -l`; n_Cs=`echo "$n_Cs / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_Cs -gt 0 ] ; then

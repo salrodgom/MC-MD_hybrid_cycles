@@ -15,7 +15,7 @@ n_max_proc=24
 loc=`pwd`
 objsMD=$loc/objsMD
 objsMC=$loc/objsMC
-RandomSeed="wed7jan"
+RandomSeed="wed7jan15"
 cation=$1
 ncation=$2
 if [[ $cation = *sodium* ]] || [[ $cation = *lithium* ]] || [[ $cation == *potassium* ]] || [[ $cation == *caesium* ]] ; then
@@ -82,7 +82,7 @@ rdf                       10
 timestep                $timestep ps
 delr width              0.5000
 rlxtol                  20.0 force
-minim   position   30 0.0075
+#minim position 95 0.01
 cutoff                  12.00
 rvdw                    12.00
 ewald precision         1.0E-6

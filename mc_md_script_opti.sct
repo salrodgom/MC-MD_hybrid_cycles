@@ -235,7 +235,7 @@ function MC_move {
    cp input.pdb ../input_${i}_${j}.pdb
    rm c
     cp $objsMD/pdb2gin.f90 .
-    cp $objsMD/gin.bottom .
+    cp $objsMD/potentials.lib .
     gfortran -O2 -march=native pdb2gin.f90 -o pdb2gin
     echo "Sorting PDB"
     head -n2 input.pdb > pdb.top
@@ -252,7 +252,7 @@ function MC_move {
     ./pdb2gin > /dev/null
     sed -i 's/sh    core/ O    shel/g' gin
     sed -i 's/sh   core/ O  shel/g' gin
-    cat gin.bottom >> gin
+    cat potentials.lib >> gin
     echo "optimise shell [ GULP ]"
     if [ $optimisate == "yes" ] ; then
      mpirun --np ${CPUs} gulp < gin > gout

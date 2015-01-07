@@ -4,6 +4,7 @@
 # optional: ifort
 optimisate=yes     # default: yes
 freeze=yes         # yes
+shell_mode=1       # 1: adiabatic, 2: relaxed
 n_mc=10             # 5
 n_md=10             # 10
 mc_cycles=10000     # 10000
@@ -81,7 +82,7 @@ stats every               10
 rdf                       10
 timestep                $timestep ps
 delr width              0.5000
-rlxtol                  20.0 force
+#rlxtol                  20.0 force
 #minim position 95 0.01
 cutoff                  12.00
 rvdw                    12.00
@@ -163,9 +164,14 @@ n_O=`grep 'ATOM' input.pdb |grep "O " | wc -l`; n_O=`echo "$n_O / $nt" | bc -l |
 if [ $n_O -gt 0 ] ; then echo "O            15.7994        0.86902   $n_O  0" >> FIELD.top ; fi
 n_sh=`grep 'ATOM' input.pdb |grep "sh" | wc -l`; n_sh=`echo "$n_sh / $nt" | bc -l | sed -e 's/\([0-9]\+\)\.[0-9]\+/\1/g'`
 if [ $n_sh -gt 0 ] ; then
-   echo "Osh           0.0000       -2.86902   $n_sh  0" >> FIELD.top
+   if [ $shell_mode = 1 ] ; then
+      Omass=0.1
+   else
+      Omass=0.0
+   fi
+   echo "Osh           $Omass       -2.86902   $n_sh  0" >> FIELD.top
    echo "Osh Osh buck   22764.40    0.14900   27.88000" >> FIELD.bottom
-   echo "shell $n_sh 2" >> FIELD.top
+   echo "shell $n_sh $shell_mode" >> FIELD.top
 fi
 n_lines=`wc -l FIELD.bottom | awk '{print $1}'`
 echo "finish
@@ -291,7 +297,7 @@ function MD_move {
   mkdir $folder
   cd $folder
   cp $objsMD/* .
-  timestep=0.00025
+  timestep=0.0001
   temp=$temperature
   choose_boltz_gulp
   cp ../gin.res.$i.$confi gin
@@ -312,12 +318,12 @@ function MD_move {
     fi
     echo "MD Cycle $i ( Relaxation ) ( Freeze = $freeze )"
     mpirun --np ${CPUs} ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
-    sleep 1
+    sleep 5
     cp OUTPUT OUTPUT.freeze
     echo "MD Cycle $i ( Equilibration )"
     sed 's/FREEZE/0/g' FIELD.bak > FIELD
     mpirun --np ${CPUs} ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
-    sleep 1
+    sleep 5
     # npt
     ncycles=$md_cycles
     print_input_DLPOLY_CONTROL
@@ -327,7 +333,7 @@ function MD_move {
     rm REVIVE OUTPUT REVCON STATIS HISTORY
     echo "MD Cycle $i ( Production )"
     mpirun --np $CPUs ${HOME}/dl_poly_2.0_special_core_shel/execute/DLPOLY.X
-    sleep 1
+    sleep 5
 # {{  control de salida de DL_POLY
     finalizado=`grep 'sample of final configuration' OUTPUT | wc -l`
     # finalizado=`grep 'Thank you for using the DL_POLY_4 package in your work' OUTPUT | wc -l`
